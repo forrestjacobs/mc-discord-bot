@@ -1,29 +1,19 @@
 import { Client } from "discord.js";
 
-import { makeMessageHandler } from "./message-handler";
+import { makeCommandHandler, makeCommands } from "./command-handler";
 import { ServerService } from "./server-service";
 
-const client = new Client();
+const service = new ServerService();
+
+const client = new Client({
+  intents: ["GUILDS", "GUILD_MESSAGES"],
+});
 
 client.on("ready", async () => {
-  const botUser = client.user;
-  if (botUser === null) {
-    console.error("client.user is null");
-    process.exit(2);
-  }
-
-  console.log(`Logged in as ${botUser.tag}`);
-
-  const serverService = new ServerService();
-
-  client.on(
-    "message",
-    makeMessageHandler({
-      botUserId: botUser.id,
-      serverService: serverService,
-    })
-  );
+  await client.application!.commands.set(await makeCommands(service));
 });
+
+client.on("interactionCreate", makeCommandHandler(service));
 
 client.on("error", (error) => {
   console.error("Caught client error");
