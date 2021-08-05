@@ -4,13 +4,22 @@ import { makeCommandHandler, makeCommands } from "./command-handler";
 import { ServerService } from "./server-service";
 
 const service = new ServerService();
+const commandsPromise = makeCommands(service);
 
 const client = new Client({
   intents: ["GUILDS", "GUILD_MESSAGES"],
 });
 
+const GUILD_ID = process.env.GUILD_ID;
+if (GUILD_ID === undefined) {
+  console.error("Expected GUILD_ID environment variable to be set");
+  process.exit(2);
+}
+
 client.on("ready", async () => {
-  await client.application!.commands.set(await makeCommands(service));
+  const guild = await client.guilds.fetch(GUILD_ID);
+  await guild.commands.set(await commandsPromise);
+  console.log("Commands set");
 });
 
 client.on("interactionCreate", makeCommandHandler(service));
