@@ -1,5 +1,6 @@
 import {
   ApplicationCommandData,
+  ApplicationCommandOptionData,
   CommandInteraction,
   Interaction,
 } from "discord.js";
@@ -8,15 +9,17 @@ import { ServerService } from "./server-service";
 
 const START_WORLD_OPT = "world";
 
-interface Command {
-  data(service: ServerService): Promise<Omit<ApplicationCommandData, "name">>;
+interface SubCommand {
+  data(
+    service: ServerService
+  ): Promise<Omit<ApplicationCommandOptionData, "name" | "type">>;
   handler(
     service: ServerService,
     interaction: CommandInteraction
   ): Promise<unknown>;
 }
 
-const commands: { [name: string]: Command } = {
+const subCommands: { [name: string]: SubCommand } = {
   start: {
     data: async (service) => ({
       description: "Starts the Minecraft server",
@@ -58,11 +61,22 @@ const commands: { [name: string]: Command } = {
 export async function makeCommands(
   service: ServerService
 ): Promise<ApplicationCommandData[]> {
-  return Promise.all(
-    Object.entries(commands).map(([name, command]) =>
-      command.data(service).then((s) => ({ ...s, name }))
-    )
-  );
+  return [
+    {
+      name: "mc",
+      description: "Controls the Minecraft server",
+      options: await Promise.all(
+        Object.entries(subCommands).map(async ([name, subCommand]) => {
+          const data = await subCommand.data(service);
+          return {
+            ...data,
+            name,
+            type: "SUB_COMMAND",
+          } as ApplicationCommandOptionData;
+        })
+      ),
+    },
+  ];
 }
 
 export function makeCommandHandler(
@@ -75,8 +89,10 @@ export function makeCommandHandler(
 
     if (service.locked) {
       await interaction.reply("I'm busy right now, try again in 30 seconds.");
-    } else {
-      await commands[interaction.commandName]?.handler(service, interaction);
+      return;
     }
+
+    const subCommandName = interaction.options.getSubcommand();
+    await subCommands[subCommandName]?.handler(service, interaction);
   };
 }
