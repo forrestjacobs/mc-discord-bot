@@ -34,7 +34,10 @@ const commands: { [name: string]: Command } = {
       ],
     }),
     handler: async (service, interaction) => {
+      // The option configuration above guarantees that "world" is a string
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const world = interaction.options.get(START_WORLD_OPT)!.value as string;
+
       await interaction.reply(`Starting \`${world}\``);
       await service.start(world);
       await interaction.followUp(
