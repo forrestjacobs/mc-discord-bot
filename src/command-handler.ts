@@ -38,17 +38,17 @@ const commands: { [name: string]: Command } = {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const world = interaction.options.getString(START_WORLD_OPT)!;
 
-      await interaction.reply(`Starting \`${world}\``);
+      await interaction.defer();
       await service.start(world);
       await interaction.followUp(
-        `Started! Connect to ${process.env.URL} to play.`
+        `Started \`${world}\`! Connect to ${process.env.URL} to play.`
       );
     },
   },
   stop: {
     data: async () => ({ description: "Stops the Minecraft server" }),
     handler: async (service, interaction) => {
-      await interaction.reply("Stopping...");
+      await interaction.defer();
       await service.stop();
       await interaction.followUp("Stopped");
     },
