@@ -53,18 +53,6 @@ const commands: { [name: string]: Command } = {
       await interaction.followUp("Stopped");
     },
   },
-  status: {
-    data: async () => ({ description: "Gets the Minecraft server status" }),
-    handler: async (service, interaction) => {
-      const runningWorlds = await service.getRunningWorlds();
-      if (runningWorlds.length === 0) {
-        await interaction.reply("Minecraft is offline");
-      } else {
-        const [world] = runningWorlds;
-        await interaction.followUp(`\`${world}\` is online`);
-      }
-    },
-  },
 };
 
 export async function makeCommands(
