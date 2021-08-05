@@ -37,7 +37,7 @@ const commands: { [name: string]: Command } = {
       const world = interaction.options.get(START_WORLD_OPT)!.value as string;
       await interaction.reply(`Starting \`${world}\``);
       await service.start(world);
-      await interaction.reply(
+      await interaction.followUp(
         `Started! Connect to ${process.env.URL} to play.`
       );
     },
@@ -47,7 +47,7 @@ const commands: { [name: string]: Command } = {
     handler: async (service, interaction) => {
       await interaction.reply("Stopping...");
       await service.stop();
-      await interaction.reply("Stopped");
+      await interaction.followUp("Stopped");
     },
   },
   status: {
@@ -58,7 +58,7 @@ const commands: { [name: string]: Command } = {
         await interaction.reply("Minecraft is offline");
       } else {
         const [world] = runningWorlds;
-        await interaction.reply(`\`${world}\` is online`);
+        await interaction.followUp(`\`${world}\` is online`);
       }
     },
   },
