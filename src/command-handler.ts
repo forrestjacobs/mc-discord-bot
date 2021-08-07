@@ -41,7 +41,7 @@ const subCommands: { [name: string]: SubCommand } = {
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       const world = interaction.options.getString(START_WORLD_OPT)!;
 
-      await interaction.defer();
+      await interaction.deferReply();
       await service.start(world);
       await interaction.followUp(
         `Started \`${world}\`! Connect to ${process.env.URL} to play.`
@@ -51,7 +51,7 @@ const subCommands: { [name: string]: SubCommand } = {
   stop: {
     data: async () => ({ description: "Stops the Minecraft server" }),
     handler: async (service, interaction) => {
-      await interaction.defer();
+      await interaction.deferReply();
       await service.stop();
       await interaction.followUp("Stopped");
     },

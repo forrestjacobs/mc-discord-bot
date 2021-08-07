@@ -13,7 +13,7 @@
   "author": "Forrest Jacobs <forrestjacobs@gmail.com>",
   "license": "ISC",
   "dependencies": {
-    "discord.js": "dev",
+    "discord.js": "^13.0.0",
     "gamedig": "^3.0.1"
   },
   "devDependencies": {
