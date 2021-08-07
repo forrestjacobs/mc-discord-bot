@@ -19,6 +19,23 @@ interface SubCommand {
   ): Promise<unknown>;
 }
 
+function getPlayerClause({
+  players,
+  maxPlayers,
+}: {
+  players: Array<string | undefined>;
+  maxPlayers: number;
+}): string {
+  if (players.length === 0) {
+    return "but no one is logged in";
+  }
+
+  const playerList = players
+    .map((player) => `- ${player ?? "Unknown"}`)
+    .join("\n");
+  return `with ${players.length}/${maxPlayers} online:\n${playerList}`;
+}
+
 const subCommands: { [name: string]: SubCommand } = {
   start: {
     data: async (service) => ({
@@ -54,6 +71,24 @@ const subCommands: { [name: string]: SubCommand } = {
       await interaction.deferReply();
       await service.stop();
       await interaction.followUp("Stopped");
+    },
+  },
+  status: {
+    data: async () => ({
+      description: "Gets the status of the Minecraft server",
+    }),
+    handler: async (service, interaction) => {
+      await interaction.deferReply();
+
+      const status = await service.getStatus();
+      if (status === undefined) {
+        await interaction.reply("Minecraft is offline");
+        return;
+      }
+
+      await interaction.editReply(
+        `\`${status.world}\` is online, ${getPlayerClause(status)}`
+      );
     },
   },
 };

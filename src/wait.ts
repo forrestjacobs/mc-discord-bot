@@ -1,6 +1,6 @@
-export function wait(ms: number): Promise<void> {
-  return new Promise((r) => setTimeout(r, ms));
-}
+import { promisify } from "util";
+
+export const wait = promisify(setTimeout);
 
 export function keepTrying(
   pause: number,

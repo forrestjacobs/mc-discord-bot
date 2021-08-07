@@ -1,4 +1,4 @@
-import { query } from "gamedig";
+import { query, QueryResult } from "gamedig";
 
 import {
   isActive,
@@ -9,6 +9,13 @@ import {
 import { keepTrying } from "./wait";
 
 const WORLD_UNIT_PREFIX = "mc-world-";
+
+function queryServer(): Promise<QueryResult> {
+  return query({
+    type: "minecraft",
+    host: "localhost",
+  });
+}
 
 export class ServerService {
   locked = false;
@@ -30,29 +37,42 @@ export class ServerService {
     return services.map((s) => s.substring(WORLD_UNIT_PREFIX.length));
   }
 
-  async getRunningWorlds(): Promise<string[]> {
+  async #getRunningWorld(): Promise<string | undefined> {
     const worlds = await this.getWorlds();
-    const running = await Promise.all(
-      worlds.map((w) => isActive(`${WORLD_UNIT_PREFIX}${w}`))
-    );
-    return worlds.filter((_, i) => running[i]);
+    return Promise.any(
+      worlds.map(async (w) =>
+        (await isActive(`${WORLD_UNIT_PREFIX}${w}`)) ? w : Promise.reject()
+      )
+    ).catch(() => undefined);
+  }
+
+  async getStatus(): Promise<
+    | { world: string; players: Array<string | undefined>; maxPlayers: number }
+    | undefined
+  > {
+    const world = await this.#getRunningWorld();
+    if (world === undefined) {
+      return undefined;
+    }
+    const { players, maxplayers } = await queryServer();
+    return {
+      world,
+      players: players.map((player) => player.name).sort(),
+      maxPlayers: maxplayers,
+    };
   }
 
   start(world: string): Promise<void> {
     return this.lock(async () => {
       await startUnit(`${WORLD_UNIT_PREFIX}${world}`);
-      await keepTrying(500, 120000, () =>
-        query({
-          type: "minecraft",
-          host: "localhost",
-        })
-      );
+      await keepTrying(500, 120000, () => queryServer());
     });
   }
 
   stop(): Promise<void> {
     return this.lock(async () => {
-      for (const world of await this.getRunningWorlds()) {
+      const world = this.#getRunningWorld();
+      if (world !== undefined) {
         await stopUnit(`${WORLD_UNIT_PREFIX}${world}`);
       }
     });
