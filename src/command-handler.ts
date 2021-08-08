@@ -79,15 +79,11 @@ const subCommands: { [name: string]: SubCommand } = {
     }),
     handler: async (service, interaction) => {
       await interaction.deferReply();
-
       const status = await service.getStatus();
-      if (status === undefined) {
-        await interaction.reply("Minecraft is offline");
-        return;
-      }
-
-      await interaction.editReply(
-        `\`${status.world}\` is online, ${getPlayerClause(status)}`
+      await interaction.followUp(
+        status === undefined
+          ? "Minecraft is offline"
+          : `\`${status.world}\` is online, ${getPlayerClause(status)}`
       );
     },
   },
