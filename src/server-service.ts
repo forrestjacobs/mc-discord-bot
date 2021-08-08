@@ -71,7 +71,7 @@ export class ServerService {
 
   stop(): Promise<void> {
     return this.lock(async () => {
-      const world = this.#getRunningWorld();
+      const world = await this.#getRunningWorld();
       if (world !== undefined) {
         await stopUnit(`${WORLD_UNIT_PREFIX}${world}`);
       }
