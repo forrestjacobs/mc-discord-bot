@@ -18,17 +18,21 @@ function queryServer(): Promise<QueryResult> {
 }
 
 export class ServerService {
-  locked = false;
+  #locked = false;
 
-  private async lock(fn: () => Promise<void>): Promise<void> {
+  get locked(): boolean {
+    return this.#locked;
+  }
+
+  async #lock(fn: () => Promise<void>): Promise<void> {
     if (this.locked) {
       throw new Error("Service is locked");
     }
     try {
-      this.locked = true;
+      this.#locked = true;
       await fn();
     } finally {
-      this.locked = false;
+      this.#locked = false;
     }
   }
 
@@ -63,14 +67,14 @@ export class ServerService {
   }
 
   start(world: string): Promise<void> {
-    return this.lock(async () => {
+    return this.#lock(async () => {
       await startUnit(`${WORLD_UNIT_PREFIX}${world}`);
       await keepTrying(500, 120000, () => queryServer());
     });
   }
 
   stop(): Promise<void> {
-    return this.lock(async () => {
+    return this.#lock(async () => {
       const world = await this.#getRunningWorld();
       if (world !== undefined) {
         await stopUnit(`${WORLD_UNIT_PREFIX}${world}`);
