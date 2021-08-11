@@ -97,11 +97,15 @@ export class ServerService {
 
       await startUnit(`${WORLD_UNIT_PREFIX}${world}`);
       await keepTrying(500, 120000, () => queryServer());
+
       await mkdir(WORLD_ORDER_PATH, { recursive: true });
       const handler = await open(`${WORLD_ORDER_PATH}${world}`, "a");
+      try {
         const now = new Date();
         await handler.utimes(now, now);
+      } finally {
         await handler.close();
+      }
     });
     for (const callback of this.#startCallbacks) {
       callback();
