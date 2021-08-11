@@ -43,11 +43,14 @@ export class ServerService {
     this.#startCallbacks.push(callback);
   }
 
-  async getWorlds(): Promise<string[]> {
+  async #getWorldSet(): Promise<Set<string>> {
     const services = await listServiceUnitFiles(`${WORLD_UNIT_PREFIX}*`);
-    const worlds = services.map((s) => s.substring(WORLD_UNIT_PREFIX.length));
+    return new Set(services.map((s) => s.substring(WORLD_UNIT_PREFIX.length)));
+  }
+
+  async getWorlds(): Promise<string[]> {
     const worldsWithMtime = await Promise.all(
-      worlds.map((world) =>
+      Array.from(await this.#getWorldSet()).map((world) =>
         stat(`${WORLD_ORDER_PATH}${world}`)
           .then((stat) => stat.mtimeMs)
           .catch(() => 0)
@@ -58,14 +61,12 @@ export class ServerService {
       )
     );
     worldsWithMtime.sort((a, b) => b.mtime - a.mtime);
-    console.log(worldsWithMtime);
     return worldsWithMtime.map((x) => x.world);
   }
 
   async #getRunningWorld(): Promise<string | undefined> {
-    const worlds = await this.getWorlds();
     return Promise.any(
-      worlds.map(async (w) =>
+      Array.from(await this.#getWorldSet()).map(async (w) =>
         (await isActive(`${WORLD_UNIT_PREFIX}${w}`)) ? w : Promise.reject()
       )
     ).catch(() => undefined);
