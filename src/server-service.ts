@@ -90,13 +90,18 @@ export class ServerService {
 
   async start(world: string): Promise<void> {
     await this.#lock(async () => {
+      const worlds = await this.#getWorldSet();
+      if (!worlds.has(world)) {
+        throw new Error(`"${world}" is not a Minecraft world`);
+      }
+
       await startUnit(`${WORLD_UNIT_PREFIX}${world}`);
       await keepTrying(500, 120000, () => queryServer());
       await mkdir(WORLD_ORDER_PATH, { recursive: true });
       const handler = await open(`${WORLD_ORDER_PATH}${world}`, "a");
-      const now = new Date();
-      await handler.utimes(now, now);
-      await handler.close();
+        const now = new Date();
+        await handler.utimes(now, now);
+        await handler.close();
     });
     for (const callback of this.#startCallbacks) {
       callback();
