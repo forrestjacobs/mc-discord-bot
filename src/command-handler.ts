@@ -124,6 +124,10 @@ export function makeCommandHandler(
     }
 
     const subCommandName = interaction.options.getSubcommand();
-    await subCommands[subCommandName]?.handler(service, interaction);
+    try {
+      await subCommands[subCommandName]?.handler(service, interaction);
+    } catch (e) {
+      interaction.followUp(`${e}`);
+    }
   };
 }
