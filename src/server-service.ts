@@ -88,8 +88,8 @@ export class ServerService {
     };
   }
 
-  async start(world: string): Promise<void> {
-    await this.#lock(async () => {
+  start(world: string): Promise<void> {
+    return this.#lock(async () => {
       const worlds = await this.#getWorldSet();
       if (!worlds.has(world)) {
         throw new Error(`"${world}" is not a Minecraft world`);
@@ -106,10 +106,10 @@ export class ServerService {
       } finally {
         await handler.close();
       }
+      for (const callback of this.#startCallbacks) {
+        callback();
+      }
     });
-    for (const callback of this.#startCallbacks) {
-      callback();
-    }
   }
 
   stop(): Promise<void> {
