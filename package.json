@@ -1,6 +1,6 @@
 {
   "name": "minecraft-discord-bot",
-  "version": "2.1.2",
+  "version": "2.2.0",
   "description": "Minecraft Discord bot",
   "main": "lib/index.js",
   "scripts": {
