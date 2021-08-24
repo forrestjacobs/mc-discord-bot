@@ -64,19 +64,15 @@ export class ServerService {
     return worldsWithMtime.map((x) => x.world);
   }
 
-  async #getRunningWorld(): Promise<string | undefined> {
-    return Promise.any(
-      Array.from(await this.#getWorldSet()).map(async (w) =>
-        (await isActive(`${WORLD_UNIT_PREFIX}${w}`)) ? w : Promise.reject()
-      )
-    ).catch(() => undefined);
-  }
-
   async getStatus(): Promise<
     | { world: string; players: Array<string | undefined>; maxPlayers: number }
     | undefined
   > {
-    const world = await this.#getRunningWorld();
+    const world = await Promise.any(
+      Array.from(await this.#getWorldSet()).map(async (w) =>
+        (await isActive(`${WORLD_UNIT_PREFIX}${w}`)) ? w : Promise.reject()
+      )
+    ).catch(() => undefined);
     if (world === undefined) {
       return undefined;
     }
@@ -114,10 +110,14 @@ export class ServerService {
 
   stop(): Promise<void> {
     return this.#lock(async () => {
-      const world = await this.#getRunningWorld();
-      if (world !== undefined) {
-        await stopUnit(`${WORLD_UNIT_PREFIX}${world}`);
+      const status = await this.getStatus();
+      if (status === undefined) {
+        throw new Error("World is not running");
       }
+      if (status.players.length !== 0) {
+        throw new Error("Players are online");
+      }
+      await stopUnit(`${WORLD_UNIT_PREFIX}${status.world}`);
     });
   }
 }
