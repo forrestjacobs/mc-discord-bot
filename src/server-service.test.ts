@@ -49,7 +49,6 @@ it("can get the status when a world is online", async () => {
   (query as jest.Mock).mockReturnValueOnce(
     Promise.resolve({
       players: [{ name: "bob" }, {}, { name: "alice" }],
-      maxplayers: 10,
     })
   );
 
@@ -60,8 +59,7 @@ it("can get the status when a world is online", async () => {
   expect(query).toHaveBeenCalled();
   expect(status).toStrictEqual({
     world: "b",
-    players: ["alice", "bob", undefined],
-    maxPlayers: 10,
+    numPlayers: 3,
   });
 });
 

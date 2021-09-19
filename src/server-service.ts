@@ -1,13 +1,13 @@
 import { mkdir, open, stat } from "fs/promises";
 import { query, QueryResult } from "gamedig";
-
 import {
   isActive,
   listServiceUnitFiles,
   start as startUnit,
-  stop as stopUnit,
+  stop as stopUnit
 } from "./systemd";
 import { keepTrying } from "./wait";
+
 
 const WORLD_UNIT_PREFIX = "mc-world-";
 const WORLD_ORDER_PATH = "/var/lib/mc-discord-bot/world-order/";
@@ -65,8 +65,7 @@ export class ServerService {
   }
 
   async getStatus(): Promise<
-    | { world: string; players: Array<string | undefined>; maxPlayers: number }
-    | undefined
+    { world: string; numPlayers: number } | undefined
   > {
     const world = await Promise.any(
       Array.from(await this.#getWorldSet()).map(async (w) =>
@@ -76,11 +75,10 @@ export class ServerService {
     if (world === undefined) {
       return undefined;
     }
-    const { players, maxplayers } = await queryServer();
+    const { players } = await queryServer();
     return {
       world,
-      players: players.map((player) => player.name).sort(),
-      maxPlayers: maxplayers,
+      numPlayers: players.length,
     };
   }
 
@@ -114,7 +112,7 @@ export class ServerService {
       if (status === undefined) {
         throw new Error("World is not running");
       }
-      if (status.players.length !== 0) {
+      if (status.numPlayers !== 0) {
         throw new Error("Players are online");
       }
       await stopUnit(`${WORLD_UNIT_PREFIX}${status.world}`);

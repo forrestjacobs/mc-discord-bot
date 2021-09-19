@@ -122,8 +122,7 @@ it("reports when no one is logged in", async () => {
     getStatus: jest.fn(() =>
       Promise.resolve({
         world: "one",
-        players: [],
-        maxPlayers: 10,
+        numPlayers: 0,
       })
     ),
   } as Partial<ServerService> as ServerService;
@@ -139,17 +138,16 @@ it("reports when no one is logged in", async () => {
   expect(interaction.deferReply).toHaveBeenCalled();
   expect(service.getStatus).toHaveBeenCalled();
   expect(interaction.followUp).toHaveBeenCalledWith(
-    "`one` is online, but no one is logged in"
+    "`one` is up, with 0 players online"
   );
 });
 
-it("Lists logged in users", async () => {
+it("counts logged in users", async () => {
   const service = {
     getStatus: jest.fn(() =>
       Promise.resolve({
         world: "one",
-        players: ["alice", "bob"],
-        maxPlayers: 10,
+        numPlayers: 2,
       })
     ),
   } as Partial<ServerService> as ServerService;
@@ -165,8 +163,6 @@ it("Lists logged in users", async () => {
   expect(interaction.deferReply).toHaveBeenCalled();
   expect(service.getStatus).toHaveBeenCalled();
   expect(interaction.followUp).toHaveBeenCalledWith(
-    "`one` is online, with 2/10 online:\n\
-- alice\n\
-- bob"
+    "`one` is up, with 2 players online"
   );
 });

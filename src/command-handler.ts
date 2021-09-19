@@ -19,23 +19,6 @@ interface SubCommand {
   ): Promise<unknown>;
 }
 
-function getPlayerClause({
-  players,
-  maxPlayers,
-}: {
-  players: Array<string | undefined>;
-  maxPlayers: number;
-}): string {
-  if (players.length === 0) {
-    return "but no one is logged in";
-  }
-
-  const playerList = players
-    .map((player) => `- ${player ?? "Unknown"}`)
-    .join("\n");
-  return `with ${players.length}/${maxPlayers} online:\n${playerList}`;
-}
-
 const subCommands: { [name: string]: SubCommand } = {
   start: {
     data: async (service) => ({
@@ -83,7 +66,9 @@ const subCommands: { [name: string]: SubCommand } = {
       await interaction.followUp(
         status === undefined
           ? "Minecraft is offline"
-          : `\`${status.world}\` is online, ${getPlayerClause(status)}`
+          : `\`${status.world}\` is up, with ${status.numPlayers} ${
+              status.numPlayers === 1 ? "player" : "players"
+            } online`
       );
     },
   },
