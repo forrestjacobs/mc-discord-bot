@@ -1,13 +1,13 @@
-import { mkdir, open, stat } from "fs/promises";
 import { query, QueryResult } from "gamedig";
+
+import { getMtime, updateMtime } from "./mtime";
 import {
   isActive,
   listServiceUnitFiles,
   start as startUnit,
-  stop as stopUnit
+  stop as stopUnit,
 } from "./systemd";
 import { keepTrying } from "./wait";
-
 
 const WORLD_UNIT_PREFIX = "mc-world-";
 const WORLD_ORDER_PATH = "/var/lib/mc-discord-bot/world-order/";
@@ -51,13 +51,10 @@ export class ServerService {
   async getWorlds(): Promise<string[]> {
     const worldsWithMtime = await Promise.all(
       Array.from(await this.#getWorldSet()).map((world) =>
-        stat(`${WORLD_ORDER_PATH}${world}`)
-          .then((stat) => stat.mtimeMs)
-          .catch(() => 0)
-          .then((mtime) => ({
-            world,
-            mtime,
-          }))
+        getMtime(`${WORLD_ORDER_PATH}${world}`).then((mtime) => ({
+          world,
+          mtime,
+        }))
       )
     );
     worldsWithMtime.sort((a, b) => b.mtime - a.mtime);
@@ -92,14 +89,7 @@ export class ServerService {
       await startUnit(`${WORLD_UNIT_PREFIX}${world}`);
       await keepTrying(500, 120000, () => queryServer());
 
-      await mkdir(WORLD_ORDER_PATH, { recursive: true });
-      const handler = await open(`${WORLD_ORDER_PATH}${world}`, "a");
-      try {
-        const now = new Date();
-        await handler.utimes(now, now);
-      } finally {
-        await handler.close();
-      }
+      await updateMtime(`${WORLD_ORDER_PATH}${world}`);
       for (const callback of this.#startCallbacks) {
         callback();
       }
