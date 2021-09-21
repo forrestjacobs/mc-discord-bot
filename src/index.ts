@@ -1,44 +1,35 @@
-import { Client, Guild } from "discord.js";
+import express from "express";
 
 import { makeCommandHandler, makeCommands } from "./command-handler";
+import { Interaction, overwriteCommands, verifyRequest } from "./discord";
 import { ServerService } from "./server-service";
 
 const service = new ServerService();
+const handle = makeCommandHandler(service);
 
-const client = new Client({
-  intents: ["GUILDS", "GUILD_MESSAGES"],
-});
-
-const GUILD_ID = process.env.GUILD_ID;
-if (GUILD_ID === undefined) {
-  console.error("Expected GUILD_ID environment variable to be set");
-  process.exit(2);
-}
-
-async function registerCommands(guild: Guild): Promise<void> {
-  await guild.commands.set(await makeCommands(service));
+async function registerCommands(): Promise<void> {
+  await overwriteCommands(await makeCommands(service));
   console.log("Commands set");
 }
 
-client.on("ready", async () => {
-  const guild = await client.guilds.fetch(GUILD_ID);
-  await registerCommands(guild);
+const app = express();
+app.use(
+  express.text({
+    type: "application/json",
+  })
+);
+
+app.post("/", async (req, res) => {
+  if (verifyRequest(req)) {
+    res.json(handle(JSON.parse(req.body) as Interaction));
+  } else {
+    res.status(401).send("401 Unauthorized");
+  }
+});
+
+app.listen(3000, async () => {
+  await registerCommands();
   service.addStartCallback(() => {
-    registerCommands(guild);
+    registerCommands();
   });
-});
-
-client.on("interactionCreate", makeCommandHandler(service));
-
-client.on("error", (error) => {
-  console.error("Caught client error");
-  console.error(error);
-  process.exit(1);
-});
-
-client.login();
-
-process.on("beforeExit", () => {
-  console.log("Exiting");
-  client.destroy();
 });

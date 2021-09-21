@@ -1,32 +1,33 @@
 import {
-  ApplicationCommandData,
-  ApplicationCommandOptionData,
+  Command,
   CommandInteraction,
+  followUp,
   Interaction,
-} from "discord.js";
-
+  InteractionResponse,
+  SubCommand,
+} from "./discord";
 import { ServerService } from "./server-service";
 
 const START_WORLD_OPT = "world";
 
-interface SubCommand {
-  data(
-    service: ServerService
-  ): Promise<Omit<ApplicationCommandOptionData, "name" | "type">>;
+interface SubCommandBuilder {
+  data(service: ServerService): Promise<Omit<SubCommand, "name" | "type">>;
   handler(
     service: ServerService,
     interaction: CommandInteraction
-  ): Promise<unknown>;
+  ): Promise<string>;
 }
 
-const subCommands: { [name: string]: SubCommand } = {
+type SubCommandName = "start" | "stop" | "status";
+
+const subCommands: { [name in SubCommandName]: SubCommandBuilder } = {
   start: {
     data: async (service) => ({
       description: "Starts the Minecraft server",
       options: [
         {
           name: START_WORLD_OPT,
-          type: "STRING",
+          type: 3, // string
           description: "The world to start",
           required: true,
           choices: (await service.getWorlds()).map((world) => ({
@@ -37,82 +38,93 @@ const subCommands: { [name: string]: SubCommand } = {
       ],
     }),
     handler: async (service, interaction) => {
-      // Since "world" is required, we know it's not null
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      const world = interaction.options.getString(START_WORLD_OPT)!;
-
-      await interaction.deferReply();
+      const world = interaction.data.options[0].options?.find(
+        (o) => o.name === START_WORLD_OPT
+      )?.value;
+      if (world === undefined) {
+        throw new Error("expected world");
+      }
       await service.start(world);
-      await interaction.followUp(
-        `Started \`${world}\`! Connect to ${process.env.URL} to play.`
-      );
+      return `Started \`${world}\`! Connect to ${process.env.URL} to play.`;
     },
   },
   stop: {
     data: async () => ({ description: "Stops the Minecraft server" }),
-    handler: async (service, interaction) => {
-      await interaction.deferReply();
+    handler: async (service) => {
       await service.stop();
-      await interaction.followUp("Stopped");
+      return "Stopped";
     },
   },
   status: {
     data: async () => ({
       description: "Gets the status of the Minecraft server",
     }),
-    handler: async (service, interaction) => {
-      await interaction.deferReply();
+    handler: async (service) => {
       const status = await service.getStatus();
-      await interaction.followUp(
-        status === undefined
-          ? "Minecraft is offline"
-          : `\`${status.world}\` is up, with ${status.numPlayers} ${
-              status.numPlayers === 1 ? "player" : "players"
-            } online`
-      );
+      if (status === undefined) {
+        return "Minecraft is offline";
+      }
+      const numPlayers = status.numPlayers;
+      const players = numPlayers === 1 ? "player" : "players";
+      return `\`${status.world}\` is up, with ${numPlayers} ${players} online`;
     },
   },
 };
 
-export async function makeCommands(
-  service: ServerService
-): Promise<ApplicationCommandData[]> {
+export async function makeCommands(service: ServerService): Promise<Command[]> {
   return [
     {
       name: "mc",
+      type: 1, // Slash command
       description: "Controls the Minecraft server",
       options: await Promise.all(
-        Object.entries(subCommands).map(async ([name, subCommand]) => {
-          const data = await subCommand.data(service);
-          return {
-            ...data,
-            name,
-            type: "SUB_COMMAND",
-          } as ApplicationCommandOptionData;
-        })
+        Object.entries(subCommands).map(async ([name, subCommand]) => ({
+          ...(await subCommand.data(service)),
+          name,
+          type: 1, // Sub command
+        }))
       ),
     },
   ];
 }
 
-export function makeCommandHandler(
-  service: ServerService
-): (interaction: Interaction) => Promise<void> {
-  return async (interaction) => {
-    if (!interaction.isCommand()) {
-      return;
+export function makeCommandHandler(service: ServerService): (
+  interaction: Interaction
+) => {
+  promise: Promise<void>;
+  response: InteractionResponse;
+} {
+  return (interaction) => {
+    if (interaction.type === 1) {
+      return {
+        promise: Promise.resolve(),
+        response: { type: 1 },
+      }; // ack
     }
+    if (interaction.type === 2) {
+      if (service.locked) {
+        return {
+          promise: Promise.resolve(),
+          response: {
+            type: 4, // message
+            data: {
+              content: "I'm busy right now, try again in 30 seconds.",
+            },
+          },
+        };
+      }
 
-    if (service.locked) {
-      await interaction.reply("I'm busy right now, try again in 30 seconds.");
-      return;
-    }
+      const subCommandName = interaction.data.options[0].name as SubCommandName;
+      const promise = subCommands[subCommandName]
+        .handler(service, interaction)
+        .catch((reason) => `${reason}`)
+        .then((content) => followUp(interaction, content));
 
-    const subCommandName = interaction.options.getSubcommand();
-    try {
-      await subCommands[subCommandName]?.handler(service, interaction);
-    } catch (e) {
-      interaction.followUp(`${e}`);
+      return {
+        promise,
+        response: { type: 5 },
+      }; // defer
     }
+    throw new Error("Expected interaction type");
   };
 }

@@ -1,7 +1,8 @@
-import { CommandInteraction } from "discord.js";
-
 import { makeCommandHandler, makeCommands } from "./command-handler";
+import { followUp, Interaction } from "./discord";
 import { ServerService } from "./server-service";
+
+jest.mock("./discord");
 
 it("can generate commands", async () => {
   const service = {
@@ -15,11 +16,11 @@ it("can generate commands", async () => {
       options: [
         {
           name: "start",
-          type: "SUB_COMMAND",
+          type: 1,
           options: [
             {
               name: "world",
-              type: "STRING",
+              type: 3,
               required: true,
               choices: [
                 {
@@ -45,18 +46,20 @@ it("can generate commands", async () => {
   ]);
 });
 
-it("does not handle any command if locked", async () => {
+it("does not handle any command if locked", () => {
   const service = {
     locked: true,
   } as Partial<ServerService> as ServerService;
   const interaction = {
-    isCommand: () => true,
-    reply: jest.fn(() => Promise.resolve()),
-  } as unknown as CommandInteraction;
-  await makeCommandHandler(service)(interaction);
-  expect(interaction.reply).toHaveBeenCalledWith(
-    "I'm busy right now, try again in 30 seconds."
-  );
+    type: 2,
+  } as Partial<Interaction> as Interaction;
+  const { response } = makeCommandHandler(service)(interaction);
+  expect(response).toStrictEqual({
+    type: 4,
+    data: {
+      content: "I'm busy right now, try again in 30 seconds.",
+    },
+  });
 });
 
 it("can start the server", async () => {
@@ -65,18 +68,29 @@ it("can start the server", async () => {
     start: jest.fn(() => Promise.resolve()),
   } as Partial<ServerService> as ServerService;
   const interaction = {
-    isCommand: () => true,
-    options: {
-      getSubcommand: () => "start",
-      getString: jest.fn(() => "one"),
+    type: 2,
+    data: {
+      options: [
+        {
+          name: "start",
+          options: [
+            {
+              name: "world",
+              value: "one",
+            },
+          ],
+        },
+      ],
     },
-    deferReply: jest.fn(() => Promise.resolve()),
-    followUp: jest.fn(() => Promise.resolve()),
-  } as unknown as CommandInteraction;
-  await makeCommandHandler(service)(interaction);
-  expect(interaction.deferReply).toHaveBeenCalled();
+  } as Partial<Interaction> as Interaction;
+
+  const { promise, response } = makeCommandHandler(service)(interaction);
+  expect(response).toStrictEqual({ type: 5 });
+  await promise;
+
   expect(service.start).toHaveBeenCalledWith("one");
-  expect(interaction.followUp).toHaveBeenCalledWith(
+  expect(followUp).toHaveBeenCalledWith(
+    interaction,
     "Started `one`! Connect to example.com to play."
   );
 });
@@ -86,17 +100,22 @@ it("can stop the server", async () => {
     stop: jest.fn(() => Promise.resolve()),
   } as Partial<ServerService> as ServerService;
   const interaction = {
-    isCommand: () => true,
-    options: {
-      getSubcommand: () => "stop",
+    type: 2,
+    data: {
+      options: [
+        {
+          name: "stop",
+        },
+      ],
     },
-    deferReply: jest.fn(() => Promise.resolve()),
-    followUp: jest.fn(() => Promise.resolve()),
-  } as unknown as CommandInteraction;
-  await makeCommandHandler(service)(interaction);
-  expect(interaction.deferReply).toHaveBeenCalled();
+  } as Partial<Interaction> as Interaction;
+
+  const { promise, response } = makeCommandHandler(service)(interaction);
+  expect(response).toStrictEqual({ type: 5 });
+  await promise;
+
   expect(service.stop).toHaveBeenCalled();
-  expect(interaction.followUp).toHaveBeenCalledWith("Stopped");
+  expect(followUp).toHaveBeenCalledWith(interaction, "Stopped");
 });
 
 it("reports when Minecraft is offline", async () => {
@@ -104,17 +123,22 @@ it("reports when Minecraft is offline", async () => {
     getStatus: jest.fn(() => Promise.resolve(undefined)),
   } as Partial<ServerService> as ServerService;
   const interaction = {
-    isCommand: () => true,
-    options: {
-      getSubcommand: () => "status",
+    type: 2,
+    data: {
+      options: [
+        {
+          name: "status",
+        },
+      ],
     },
-    deferReply: jest.fn(() => Promise.resolve()),
-    followUp: jest.fn(() => Promise.resolve()),
-  } as unknown as CommandInteraction;
-  await makeCommandHandler(service)(interaction);
-  expect(interaction.deferReply).toHaveBeenCalled();
+  } as Partial<Interaction> as Interaction;
+
+  const { promise, response } = makeCommandHandler(service)(interaction);
+  expect(response).toStrictEqual({ type: 5 });
+  await promise;
+
   expect(service.getStatus).toHaveBeenCalled();
-  expect(interaction.followUp).toHaveBeenCalledWith("Minecraft is offline");
+  expect(followUp).toHaveBeenCalledWith(interaction, "Minecraft is offline");
 });
 
 it("reports when no one is logged in", async () => {
@@ -127,17 +151,23 @@ it("reports when no one is logged in", async () => {
     ),
   } as Partial<ServerService> as ServerService;
   const interaction = {
-    isCommand: () => true,
-    options: {
-      getSubcommand: () => "status",
+    type: 2,
+    data: {
+      options: [
+        {
+          name: "status",
+        },
+      ],
     },
-    deferReply: jest.fn(() => Promise.resolve()),
-    followUp: jest.fn(() => Promise.resolve()),
-  } as unknown as CommandInteraction;
-  await makeCommandHandler(service)(interaction);
-  expect(interaction.deferReply).toHaveBeenCalled();
+  } as Partial<Interaction> as Interaction;
+
+  const { promise, response } = makeCommandHandler(service)(interaction);
+  expect(response).toStrictEqual({ type: 5 });
+  await promise;
+
   expect(service.getStatus).toHaveBeenCalled();
-  expect(interaction.followUp).toHaveBeenCalledWith(
+  expect(followUp).toHaveBeenCalledWith(
+    interaction,
     "`one` is up, with 0 players online"
   );
 });
@@ -152,17 +182,23 @@ it("counts logged in users", async () => {
     ),
   } as Partial<ServerService> as ServerService;
   const interaction = {
-    isCommand: () => true,
-    options: {
-      getSubcommand: () => "status",
+    type: 2,
+    data: {
+      options: [
+        {
+          name: "status",
+        },
+      ],
     },
-    deferReply: jest.fn(() => Promise.resolve()),
-    followUp: jest.fn(() => Promise.resolve()),
-  } as unknown as CommandInteraction;
-  await makeCommandHandler(service)(interaction);
-  expect(interaction.deferReply).toHaveBeenCalled();
+  } as Partial<Interaction> as Interaction;
+
+  const { promise, response } = makeCommandHandler(service)(interaction);
+  expect(response).toStrictEqual({ type: 5 });
+  await promise;
+
   expect(service.getStatus).toHaveBeenCalled();
-  expect(interaction.followUp).toHaveBeenCalledWith(
+  expect(followUp).toHaveBeenCalledWith(
+    interaction,
     "`one` is up, with 2 players online"
   );
 });
