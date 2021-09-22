@@ -4,12 +4,12 @@ import { ServerService } from "./server-service";
 
 jest.mock("./discord");
 
-it("can generate commands", async () => {
+it("can generate commands", () => {
   const service = {
-    getWorlds: () => Promise.resolve(["one", "two"]),
+    worlds: ["one", "two"],
   } as Partial<ServerService> as ServerService;
 
-  const commands = await makeCommands(service);
+  const commands = makeCommands(service);
   expect(commands).toMatchObject([
     {
       name: "mc",

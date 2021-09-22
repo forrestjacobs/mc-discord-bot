@@ -4,7 +4,13 @@ import { makeCommandHandler, makeCommands } from "./command-handler";
 import { Interaction, overwriteCommands, verifyRequest } from "./discord";
 import { ServerService } from "./server-service";
 
-const service = new ServerService();
+const WORLDS = process.env.WORLDS?.split(",");
+if (WORLDS == undefined) {
+  console.error("Expected environment variables to be set");
+  process.exit(2);
+}
+
+const service = new ServerService(WORLDS);
 const handle = makeCommandHandler(service);
 
 async function registerCommands(): Promise<void> {
@@ -27,9 +33,6 @@ app.post("/", async (req, res) => {
   }
 });
 
-app.listen(3000, async () => {
-  await registerCommands();
-  service.addStartCallback(() => {
-    registerCommands();
-  });
+app.listen(3000, () => {
+  registerCommands();
 });

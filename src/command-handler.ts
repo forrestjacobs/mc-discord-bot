@@ -11,7 +11,7 @@ import { ServerService } from "./server-service";
 const START_WORLD_OPT = "world";
 
 interface SubCommandBuilder {
-  data(service: ServerService): Promise<Omit<SubCommand, "name" | "type">>;
+  data(service: ServerService): Omit<SubCommand, "name" | "type">;
   handler(
     service: ServerService,
     interaction: CommandInteraction
@@ -22,7 +22,7 @@ type SubCommandName = "start" | "stop" | "status";
 
 const subCommands: { [name in SubCommandName]: SubCommandBuilder } = {
   start: {
-    data: async (service) => ({
+    data: (service) => ({
       description: "Starts the Minecraft server",
       options: [
         {
@@ -30,7 +30,7 @@ const subCommands: { [name in SubCommandName]: SubCommandBuilder } = {
           type: 3, // string
           description: "The world to start",
           required: true,
-          choices: (await service.getWorlds()).map((world) => ({
+          choices: service.worlds.map((world) => ({
             name: world,
             value: world,
           })),
@@ -49,14 +49,14 @@ const subCommands: { [name in SubCommandName]: SubCommandBuilder } = {
     },
   },
   stop: {
-    data: async () => ({ description: "Stops the Minecraft server" }),
+    data: () => ({ description: "Stops the Minecraft server" }),
     handler: async (service) => {
       await service.stop();
       return "Stopped";
     },
   },
   status: {
-    data: async () => ({
+    data: () => ({
       description: "Gets the status of the Minecraft server",
     }),
     handler: async (service) => {
@@ -71,19 +71,17 @@ const subCommands: { [name in SubCommandName]: SubCommandBuilder } = {
   },
 };
 
-export async function makeCommands(service: ServerService): Promise<Command[]> {
+export function makeCommands(service: ServerService): Command[] {
   return [
     {
       name: "mc",
       type: 1, // Slash command
       description: "Controls the Minecraft server",
-      options: await Promise.all(
-        Object.entries(subCommands).map(async ([name, subCommand]) => ({
-          ...(await subCommand.data(service)),
-          name,
-          type: 1, // Sub command
-        }))
-      ),
+      options: Object.entries(subCommands).map(([name, subCommand]) => ({
+        ...subCommand.data(service),
+        name,
+        type: 1, // Sub command
+      })),
     },
   ];
 }
