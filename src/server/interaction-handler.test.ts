@@ -1,50 +1,9 @@
-import { makeCommandHandler, makeCommands } from "./command-handler";
-import { followUp, Interaction } from "./discord";
+import { followUp } from "./discord";
+import { makeInteractionHandler } from "./interaction-handler";
 import { ServerService } from "./mc-server-service";
+import { Interaction } from "./types";
 
 jest.mock("./discord");
-
-it("can generate commands", () => {
-  const service = {
-    worlds: ["one", "two"],
-  } as Partial<ServerService> as ServerService;
-
-  const commands = makeCommands(service);
-  expect(commands).toMatchObject([
-    {
-      name: "mc",
-      options: [
-        {
-          name: "start",
-          type: 1,
-          options: [
-            {
-              name: "world",
-              type: 3,
-              required: true,
-              choices: [
-                {
-                  name: "one",
-                  value: "one",
-                },
-                {
-                  name: "two",
-                  value: "two",
-                },
-              ],
-            },
-          ],
-        },
-        {
-          name: "stop",
-        },
-        {
-          name: "status",
-        },
-      ],
-    },
-  ]);
-});
 
 it("does not handle any command if locked", () => {
   const service = {
@@ -53,7 +12,7 @@ it("does not handle any command if locked", () => {
   const interaction = {
     type: 2,
   } as Partial<Interaction> as Interaction;
-  const { response } = makeCommandHandler(service)(interaction);
+  const { response } = makeInteractionHandler(service)(interaction);
   expect(response).toStrictEqual({
     type: 4,
     data: {
@@ -84,7 +43,7 @@ it("can start the server", async () => {
     },
   } as Partial<Interaction> as Interaction;
 
-  const { promise, response } = makeCommandHandler(service)(interaction);
+  const { promise, response } = makeInteractionHandler(service)(interaction);
   expect(response).toStrictEqual({ type: 5 });
   await promise;
 
@@ -110,7 +69,7 @@ it("can stop the server", async () => {
     },
   } as Partial<Interaction> as Interaction;
 
-  const { promise, response } = makeCommandHandler(service)(interaction);
+  const { promise, response } = makeInteractionHandler(service)(interaction);
   expect(response).toStrictEqual({ type: 5 });
   await promise;
 
@@ -133,7 +92,7 @@ it("reports when Minecraft is offline", async () => {
     },
   } as Partial<Interaction> as Interaction;
 
-  const { promise, response } = makeCommandHandler(service)(interaction);
+  const { promise, response } = makeInteractionHandler(service)(interaction);
   expect(response).toStrictEqual({ type: 5 });
   await promise;
 
@@ -161,7 +120,7 @@ it("reports when no one is logged in", async () => {
     },
   } as Partial<Interaction> as Interaction;
 
-  const { promise, response } = makeCommandHandler(service)(interaction);
+  const { promise, response } = makeInteractionHandler(service)(interaction);
   expect(response).toStrictEqual({ type: 5 });
   await promise;
 
@@ -192,7 +151,7 @@ it("counts logged in users", async () => {
     },
   } as Partial<Interaction> as Interaction;
 
-  const { promise, response } = makeCommandHandler(service)(interaction);
+  const { promise, response } = makeInteractionHandler(service)(interaction);
   expect(response).toStrictEqual({ type: 5 });
   await promise;
 
