@@ -1,6 +1,6 @@
 import { makeCommandHandler, makeCommands } from "./command-handler";
 import { followUp, Interaction } from "./discord";
-import { ServerService } from "./server-service";
+import { ServerService } from "./mc-server-service";
 
 jest.mock("./discord");
 

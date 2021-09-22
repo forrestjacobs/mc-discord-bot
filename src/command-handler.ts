@@ -6,7 +6,7 @@ import {
   InteractionResponse,
   SubCommand,
 } from "./discord";
-import { ServerService } from "./server-service";
+import { ServerService } from "./mc-server-service";
 
 const START_WORLD_OPT = "world";
 

@@ -1,6 +1,6 @@
 import { query } from "gamedig";
 
-import { ServerService } from "./server-service";
+import { ServerService } from "./mc-server-service";
 import { isActive } from "./systemd";
 
 jest.mock("fs/promises");

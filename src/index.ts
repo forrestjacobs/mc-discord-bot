@@ -2,7 +2,7 @@ import express from "express";
 
 import { makeCommandHandler, makeCommands } from "./command-handler";
 import { Interaction, overwriteCommands, verifyRequest } from "./discord";
-import { ServerService } from "./server-service";
+import { ServerService } from "./mc-server-service";
 
 const WORLDS = process.env.WORLDS?.split(",");
 if (WORLDS == undefined) {
