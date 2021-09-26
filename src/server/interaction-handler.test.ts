@@ -5,14 +5,20 @@ import { Interaction } from "./types";
 
 jest.mock("./discord");
 
-it("does not handle any command if locked", () => {
+jest.useFakeTimers();
+
+afterEach(() => {
+  jest.runAllTimers();
+});
+
+it("does not handle any command if locked", async () => {
   const service = {
     locked: true,
   } as Partial<ServerService> as ServerService;
   const interaction = {
     type: 2,
   } as Partial<Interaction> as Interaction;
-  const { response } = makeInteractionHandler(service)(interaction);
+  const { response } = await makeInteractionHandler(service)(interaction);
   expect(response).toStrictEqual({
     type: 4,
     data: {
@@ -23,8 +29,14 @@ it("does not handle any command if locked", () => {
 
 it("can start the server", async () => {
   process.env.URL = "example.com";
+  let resolve: () => void = () => fail();
   const service = {
-    start: jest.fn(() => Promise.resolve()),
+    start: jest.fn(
+      () =>
+        new Promise((r) => {
+          resolve = r;
+        })
+    ),
   } as Partial<ServerService> as ServerService;
   const interaction = {
     type: 2,
@@ -43,9 +55,12 @@ it("can start the server", async () => {
     },
   } as Partial<Interaction> as Interaction;
 
-  const { promise, response } = makeInteractionHandler(service)(interaction);
+  const handleResult = makeInteractionHandler(service)(interaction);
+  jest.runAllTimers();
+  const { response, completion } = await handleResult;
   expect(response).toStrictEqual({ type: 5 });
-  await promise;
+  resolve();
+  await completion;
 
   expect(service.start).toHaveBeenCalledWith("one");
   expect(followUp).toHaveBeenCalledWith(
@@ -69,12 +84,9 @@ it("can stop the server", async () => {
     },
   } as Partial<Interaction> as Interaction;
 
-  const { promise, response } = makeInteractionHandler(service)(interaction);
-  expect(response).toStrictEqual({ type: 5 });
-  await promise;
-
+  const { response } = await makeInteractionHandler(service)(interaction);
   expect(service.stop).toHaveBeenCalled();
-  expect(followUp).toHaveBeenCalledWith(interaction, "Stopped");
+  expect(response).toStrictEqual({ type: 4, data: { content: "Stopped" } });
 });
 
 it("reports when Minecraft is offline", async () => {
@@ -92,12 +104,12 @@ it("reports when Minecraft is offline", async () => {
     },
   } as Partial<Interaction> as Interaction;
 
-  const { promise, response } = makeInteractionHandler(service)(interaction);
-  expect(response).toStrictEqual({ type: 5 });
-  await promise;
-
+  const { response } = await makeInteractionHandler(service)(interaction);
   expect(service.getStatus).toHaveBeenCalled();
-  expect(followUp).toHaveBeenCalledWith(interaction, "Minecraft is offline");
+  expect(response).toStrictEqual({
+    type: 4,
+    data: { content: "Minecraft is offline" },
+  });
 });
 
 it("reports when no one is logged in", async () => {
@@ -120,15 +132,12 @@ it("reports when no one is logged in", async () => {
     },
   } as Partial<Interaction> as Interaction;
 
-  const { promise, response } = makeInteractionHandler(service)(interaction);
-  expect(response).toStrictEqual({ type: 5 });
-  await promise;
-
+  const { response } = await makeInteractionHandler(service)(interaction);
   expect(service.getStatus).toHaveBeenCalled();
-  expect(followUp).toHaveBeenCalledWith(
-    interaction,
-    "`one` is up, with 0 players online"
-  );
+  expect(response).toStrictEqual({
+    type: 4,
+    data: { content: "`one` is up, with 0 players online" },
+  });
 });
 
 it("counts logged in users", async () => {
@@ -151,13 +160,10 @@ it("counts logged in users", async () => {
     },
   } as Partial<Interaction> as Interaction;
 
-  const { promise, response } = makeInteractionHandler(service)(interaction);
-  expect(response).toStrictEqual({ type: 5 });
-  await promise;
-
+  const { response } = await makeInteractionHandler(service)(interaction);
   expect(service.getStatus).toHaveBeenCalled();
-  expect(followUp).toHaveBeenCalledWith(
-    interaction,
-    "`one` is up, with 2 players online"
-  );
+  expect(response).toStrictEqual({
+    type: 4,
+    data: { content: "`one` is up, with 2 players online" },
+  });
 });

@@ -1,6 +1,4 @@
-import { promisify } from "util";
-
-export const wait = promisify(setTimeout);
+import { setTimeout } from "timers/promises";
 
 export function keepTrying(
   pause: number,
@@ -8,13 +6,13 @@ export function keepTrying(
   cb: () => Promise<unknown>
 ): Promise<unknown> {
   return Promise.race([
-    wait(timeout).then(() => {
+    setTimeout(timeout).then(() => {
       throw new Error("Took too long");
     }),
     new Promise<void>(async (r) => {
       while (true) {
         try {
-          const [, results] = await Promise.all([wait(pause), cb()]);
+          const [, results] = await Promise.all([setTimeout(pause), cb()]);
           console.log(results);
           break;
         } catch (e) {
