@@ -1,4 +1,4 @@
-import { Request } from "express";
+import { IncomingMessage } from "http";
 import { Response } from "node-fetch";
 import { sign } from "tweetnacl";
 
@@ -9,14 +9,12 @@ import { CommandInteraction } from "./types";
 const APPLICATION_ID = getEnv("APPLICATION_ID");
 const publicKeyHex = Buffer.from(getEnv("PUBLIC_KEY"), "hex");
 
-export function verifyRequest(req: Request): boolean {
-  const signature = req.get("X-Signature-Ed25519");
-  const timestamp = req.get("X-Signature-Timestamp");
-  const body: string | undefined = req.body;
+export function verifyRequest(body: string, req: IncomingMessage): boolean {
+  const signature = req.headers["X-Signature-Ed25519"];
+  const timestamp = req.headers["X-Signature-Timestamp"];
   return (
-    signature !== undefined &&
-    timestamp !== undefined &&
-    body !== undefined &&
+    typeof signature === "string" &&
+    typeof timestamp === "string" &&
     sign.detached.verify(
       Buffer.from(`${timestamp}${body}`),
       Buffer.from(signature, "hex"),

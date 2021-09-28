@@ -1,4 +1,4 @@
-import express from "express";
+import { createServer, IncomingMessage } from "http";
 
 import { getWorlds } from "../common/env";
 import { verifyRequest } from "./discord";
@@ -9,19 +9,31 @@ import { Interaction } from "./types";
 const service = new ServerService(getWorlds());
 const handle = makeInteractionHandler(service);
 
-const app = express();
-app.use(
-  express.text({
-    type: "application/json",
-  })
-);
+function getBody(req: IncomingMessage): Promise<string> {
+  return new Promise<string>((resolve) => {
+    let content = "";
+    req.on("data", (chunk: string) => {
+      content += chunk;
+    });
+    req.on("close", () => {
+      resolve(content);
+    });
+  });
+}
 
-app.post("/", async (req, res) => {
-  if (verifyRequest(req)) {
-    res.json(handle(JSON.parse(req.body) as Interaction));
-  } else {
-    res.status(401).send("401 Unauthorized");
+const server = createServer(async (req, res) => {
+  try {
+    const body = await getBody(req);
+    if (verifyRequest(body, req)) {
+      res
+        .writeHead(200, { "Content-Type": "application/json" })
+        .end(await handle(JSON.parse(body) as Interaction));
+    } else {
+      res.writeHead(401).end("Unauthorized");
+    }
+  } catch (e) {
+    console.error(e);
+    res.writeHead(500).end("Internal Server Error");
   }
 });
-
-app.listen(3000);
+server.listen(3000);
