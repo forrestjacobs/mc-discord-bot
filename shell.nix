@@ -1,10 +1,6 @@
 { pkgs ? import <nixpkgs> {} }:
-
-let
-  pkgsUnstable = import <nixpkgs-unstable> {};
-
-in pkgs.mkShell {
+pkgs.mkShell {
   buildInputs = [
-    pkgsUnstable.nodejs-16_x
+    pkgs.nodejs-16_x
   ];
 }
