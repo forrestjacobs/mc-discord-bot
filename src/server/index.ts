@@ -1,6 +1,6 @@
 import { createServer, IncomingMessage } from "http";
 
-import { getWorlds } from "../common/env";
+import { getEnv, getWorlds } from "../common/env";
 import { verifyRequest } from "./discord";
 import { makeInteractionHandler } from "./interaction-handler";
 import { ServerService } from "./mc-server-service";
@@ -36,4 +36,4 @@ const server = createServer(async (req, res) => {
     res.writeHead(500).end("Internal Server Error");
   }
 });
-server.listen(3000);
+server.listen({ port: parseInt(getEnv("PORT"), 10) });
