@@ -1,4 +1,11 @@
+import { SocketConstructorOpts } from "net";
+
 import { execFile } from "./child-process";
+
+export function getFileDescriptor(): SocketConstructorOpts | null {
+  const fds = process.env.LISTEN_FDS;
+  return fds !== undefined && parseInt(fds, 10) > 0 ? { fd: 3 } : null;
+}
 
 export async function start(unit: string): Promise<void> {
   await execFile("systemctl", ["start", unit]);

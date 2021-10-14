@@ -4,6 +4,7 @@ import { getEnv, getWorlds } from "../common/env";
 import { verifyRequest } from "./discord";
 import { makeInteractionHandler } from "./interaction-handler";
 import { ServerService } from "./mc-server-service";
+import { getFileDescriptor } from "./systemd";
 import { Interaction } from "./types";
 
 const service = new ServerService(getWorlds());
@@ -36,4 +37,4 @@ const server = createServer(async (req, res) => {
     res.writeHead(500).end("Internal Server Error");
   }
 });
-server.listen({ port: parseInt(getEnv("PORT"), 10) });
+server.listen(getFileDescriptor() ?? { port: parseInt(getEnv("PORT"), 10) });
