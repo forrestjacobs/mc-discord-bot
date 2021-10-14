@@ -14,7 +14,7 @@ it("can get the status when no world is online", async () => {
   const status = await new ServerService(["a", "b"]).getStatus();
   expect(isActive).toHaveBeenCalledWith("mc-world-a");
   expect(isActive).toHaveBeenCalledWith("mc-world-b");
-  expect(status).toBeUndefined();
+  expect(status).toBeNull();
 });
 
 it("can get the status when a world is online", async () => {

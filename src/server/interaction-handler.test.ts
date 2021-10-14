@@ -91,7 +91,7 @@ it("can stop the server", async () => {
 
 it("reports when Minecraft is offline", async () => {
   const service = {
-    getStatus: jest.fn(() => Promise.resolve(undefined)),
+    getStatus: jest.fn(() => Promise.resolve(null)),
   } as Partial<ServerService> as ServerService;
   const interaction = {
     type: 2,

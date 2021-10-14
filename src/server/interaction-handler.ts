@@ -21,7 +21,7 @@ async function handleCommand(
   }
 
   const status = await service.getStatus();
-  if (status === undefined) {
+  if (status === null) {
     return "Minecraft is offline";
   }
   const numPlayers = status.numPlayers;

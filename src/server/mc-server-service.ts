@@ -36,16 +36,14 @@ export class ServerService {
     }
   }
 
-  async getStatus(): Promise<
-    { world: string; numPlayers: number } | undefined
-  > {
+  async getStatus(): Promise<{ world: string; numPlayers: number } | null> {
     const world = await Promise.any(
       this.worlds.map(async (w) =>
         (await isActive(`${WORLD_UNIT_PREFIX}${w}`)) ? w : Promise.reject()
       )
-    ).catch(() => undefined);
-    if (world === undefined) {
-      return undefined;
+    ).catch(() => null);
+    if (world === null) {
+      return null;
     }
     const { players } = await queryServer();
     return {
@@ -68,7 +66,7 @@ export class ServerService {
   stop(): Promise<void> {
     return this.#lock(async () => {
       const status = await this.getStatus();
-      if (status === undefined) {
+      if (status === null) {
         throw new Error("World is not running");
       }
       if (status.numPlayers !== 0) {
