@@ -39,4 +39,10 @@ const server = createServer(async (req, res) => {
     res.writeHead(500).end("Internal Server Error");
   }
 });
-server.listen(getFileDescriptor() ?? { port: parseInt(getEnv("PORT"), 10) });
+
+const fd = getFileDescriptor();
+if (fd !== null) {
+  server.unref();
+}
+
+server.listen(fd ?? { port: parseInt(getEnv("PORT"), 10) });
