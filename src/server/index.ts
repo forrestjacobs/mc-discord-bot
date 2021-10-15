@@ -26,9 +26,11 @@ const server = createServer(async (req, res) => {
   try {
     const body = await getBody(req);
     if (verifyRequest(body, req)) {
+      const interaction = JSON.parse(body) as Interaction;
+      const { response } = await handle(interaction);
       res
         .writeHead(200, { "Content-Type": "application/json" })
-        .end(await handle(JSON.parse(body) as Interaction));
+        .end(JSON.stringify(response));
     } else {
       res.writeHead(401).end("Unauthorized");
     }
