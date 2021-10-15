@@ -22,6 +22,8 @@ function getBody(req: IncomingMessage): Promise<string> {
   });
 }
 
+const fd = getFileDescriptor();
+
 const server = createServer(async (req, res) => {
   try {
     const body = await getBody(req);
@@ -38,11 +40,9 @@ const server = createServer(async (req, res) => {
     console.error(e);
     res.writeHead(500).end("Internal Server Error");
   }
+  if (fd !== null) {
+    server.unref();
+  }
 });
-
-const fd = getFileDescriptor();
-if (fd !== null) {
-  server.unref();
-}
 
 server.listen(fd ?? { port: parseInt(getEnv("PORT"), 10) });
