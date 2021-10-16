@@ -8,8 +8,8 @@ import {
   stopWorld,
 } from "../common/worlds";
 
-const TTL = 1 * 60 * 1000; // 1800000; // 30 minutes in ms
-const CHECK_INTERVAL = 18 * 1000; // 18 seconds in ms
+const TTL = 30 * 60 * 1000; // 30 minutes in ms
+const CHECK_INTERVAL = 15 * 1000; // 15 seconds in ms
 
 async function iter(
   world: string,
