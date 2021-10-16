@@ -1,4 +1,5 @@
 import { exit } from "process";
+import { setTimeout } from "timers";
 
 import {
   getRunningWorld,
@@ -17,21 +18,22 @@ async function shouldExit(
   endDate: number
 ): Promise<boolean> {
   const now = Date.now();
+  console.log(`Checking ${world}`);
 
   const start = await getWorldStart(world);
   if (start !== expectedStart) {
-    console.log(`Exiting because of unexpected start date: ${start}`);
+    console.log(`Exiting because ${world} has stopped or restarted`);
     return true;
   }
 
   const { players } = await queryServer();
   if (players.length > 0) {
-    console.log(`Exiting because there are ${players.length} online`);
+    console.log(`Exiting because ${world} has ${players.length} player(s)`);
     return true;
   }
 
   if (now > endDate) {
-    console.log("Stopping the world");
+    console.log(`Stopping ${world}`);
     await stopWorld(world);
     return true;
   }
@@ -48,6 +50,8 @@ async function iter(world: string, start: bigint, endDate: number) {
     console.error("Could not check Minecraft service", e);
     exit(2);
   }
+
+  setTimeout(() => iter(world, start, endDate), CHECK_INTERVAL);
 }
 
 async function start() {
@@ -59,26 +63,15 @@ async function start() {
 
   const start = await getWorldStart(world);
   if (start === null) {
-    console.log("Exiting because the world does not have a start date");
+    console.log(`Exiting because ${world} does not have a start date`);
     return;
   }
 
   const endDate = Date.now() + TTL;
-  console.log(`${world} is running with start date ${start}`);
+  const formattedEndDate = new Date(endDate).toLocaleString();
+  console.log(`Will stop ${world} at ${formattedEndDate} if no one logs in`);
+
   iter(world, start, endDate);
-
-  console.log(`Stopping at ${endDate} if no one logs in`);
-
-  let locked = false;
-  setInterval(async () => {
-    if (locked) {
-      return;
-    }
-
-    locked = true;
-    iter(world, start, endDate);
-    locked = false;
-  }, CHECK_INTERVAL);
 }
 
 start().catch((e) => {
