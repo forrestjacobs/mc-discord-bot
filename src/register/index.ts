@@ -1,4 +1,4 @@
-import { getWorlds } from "../common/env";
+import { getWorlds } from "../common/worlds";
 import { makeCommand } from "./command";
 import { overwriteCommands } from "./discord";
 

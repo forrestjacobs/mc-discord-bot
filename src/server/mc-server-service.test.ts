@@ -1,7 +1,7 @@
 import { query } from "gamedig";
 
+import { isActive } from "../common/systemd";
 import { ServerService } from "./mc-server-service";
-import { isActive } from "./systemd";
 
 jest.mock("fs/promises");
 jest.mock("gamedig");

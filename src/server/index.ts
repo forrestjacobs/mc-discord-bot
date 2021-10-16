@@ -1,14 +1,20 @@
 import { createServer, IncomingMessage } from "http";
+import { SocketConstructorOpts } from "net";
 
-import { getEnv, getWorlds } from "../common/env";
+import { getEnv } from "../common/env";
+import { getWorlds } from "../common/worlds";
 import { verifyRequest } from "./discord";
 import { makeInteractionHandler } from "./interaction-handler";
 import { ServerService } from "./mc-server-service";
-import { getFileDescriptor } from "./systemd";
 import { Interaction } from "./types";
 
 const service = new ServerService(getWorlds());
 const handle = makeInteractionHandler(service);
+
+function getFileDescriptor(): SocketConstructorOpts | null {
+  const fds = process.env.LISTEN_FDS;
+  return fds !== undefined && parseInt(fds, 10) > 0 ? { fd: 3 } : null;
+}
 
 function getBody(req: IncomingMessage): Promise<string> {
   return new Promise<string>((resolve) => {

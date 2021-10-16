@@ -1,16 +1,10 @@
-import { query, QueryResult } from "gamedig";
-
-import { isActive, start as startUnit, stop as stopUnit } from "./systemd";
+import {
+  getRunningWorld,
+  queryServer,
+  startWorld,
+  stopWorld,
+} from "../common/worlds";
 import { keepTrying } from "./wait";
-
-const WORLD_UNIT_PREFIX = "mc-world-";
-
-function queryServer(): Promise<QueryResult> {
-  return query({
-    type: "minecraft",
-    host: "localhost",
-  });
-}
 
 export class ServerService {
   #locked = false;
@@ -37,11 +31,7 @@ export class ServerService {
   }
 
   async getStatus(): Promise<{ world: string; numPlayers: number } | null> {
-    const world = await Promise.any(
-      this.worlds.map(async (w) =>
-        (await isActive(`${WORLD_UNIT_PREFIX}${w}`)) ? w : Promise.reject()
-      )
-    ).catch(() => null);
+    const world = await getRunningWorld(this.worlds);
     if (world === null) {
       return null;
     }
@@ -58,7 +48,7 @@ export class ServerService {
         throw new Error(`"${world}" is not a Minecraft world`);
       }
 
-      await startUnit(`${WORLD_UNIT_PREFIX}${world}`);
+      await startWorld(world);
       await keepTrying(500, 120000, () => queryServer());
     });
   }
@@ -72,7 +62,7 @@ export class ServerService {
       if (status.numPlayers !== 0) {
         throw new Error("Players are online");
       }
-      await stopUnit(`${WORLD_UNIT_PREFIX}${status.world}`);
+      await stopWorld(status.world);
     });
   }
 }

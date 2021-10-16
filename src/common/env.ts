@@ -5,7 +5,3 @@ export function getEnv(name: string): string {
   }
   return value;
 }
-
-export function getWorlds(): string[] {
-  return getEnv("WORLDS").split(",");
-}

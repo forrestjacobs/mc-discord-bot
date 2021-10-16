@@ -5,7 +5,9 @@
   "scripts": {
     "build": "tsc",
     "build:watch": "tsc --watch",
-    "serve:dev": "nodemon ./lib/server",
+    "register": "nodemon ./lib/register",
+    "serve": "nodemon ./lib/server",
+    "watchdog": "nodemon ./lib/watchdog",
     "format": "prettier --write \"src/**/*.ts\"",
     "lint": "eslint 'src/**/*.ts' --fix",
     "test": "jest"

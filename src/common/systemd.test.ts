@@ -1,5 +1,5 @@
 import { execFile } from "./child-process";
-import { isActive, start, stop } from "./systemd";
+import { isActive, start, stop } from "../common/systemd";
 
 jest.mock("./child-process");
 
