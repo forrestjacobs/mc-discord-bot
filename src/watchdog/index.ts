@@ -11,7 +11,7 @@ import {
 const TTL = 30 * 60 * 1000; // 30 minutes in ms
 const CHECK_INTERVAL = 15 * 1000; // 15 seconds in ms
 
-async function iter(
+async function shouldExit(
   world: string,
   expectedStart: bigint,
   endDate: number
@@ -39,6 +39,17 @@ async function iter(
   return false;
 }
 
+async function iter(world: string, start: bigint, endDate: number) {
+  try {
+    if (await shouldExit(world, start, endDate)) {
+      exit(0);
+    }
+  } catch (e) {
+    console.error("Could not check Minecraft service", e);
+    exit(2);
+  }
+}
+
 async function start() {
   const world = await getRunningWorld(getWorlds());
   if (world === null) {
@@ -54,6 +65,8 @@ async function start() {
 
   const endDate = Date.now() + TTL;
   console.log(`${world} is running with start date ${start}`);
+  iter(world, start, endDate);
+
   console.log(`Stopping at ${endDate} if no one logs in`);
 
   let locked = false;
@@ -63,14 +76,7 @@ async function start() {
     }
 
     locked = true;
-    try {
-      if (await iter(world, start, endDate)) {
-        exit(0);
-      }
-    } catch (e) {
-      console.error("Could not check Minecraft service", e);
-      exit(2);
-    }
+    iter(world, start, endDate);
     locked = false;
   }, CHECK_INTERVAL);
 }
